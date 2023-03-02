@@ -92,24 +92,24 @@ void setupScene(RTContext &rtx, const char *filename)
         Sphere(glm::vec3(1.0f, 0.0f, 0.0f), 0.5f),
         Sphere(glm::vec3(-1.0f, 0.0f, 0.0f), 0.5f),
     };
-    //g_scene.boxes = {
-    //    Box(glm::vec3(0.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
-    //    Box(glm::vec3(1.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
-    //    Box(glm::vec3(-1.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
-    //};
+    g_scene.boxes = {
+        Box(glm::vec3(0.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
+        Box(glm::vec3(1.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
+        Box(glm::vec3(-1.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
+    };
 
-    //cg::OBJMesh mesh;
-    //cg::objMeshLoad(mesh, filename);
-    //g_scene.mesh.clear();
-    //for (int i = 0; i < mesh.indices.size(); i += 3) {
-    //    int i0 = mesh.indices[i + 0];
-    //    int i1 = mesh.indices[i + 1];
-    //    int i2 = mesh.indices[i + 2];
-    //    glm::vec3 v0 = mesh.vertices[i0] + glm::vec3(0.0f, 0.135f, 0.0f);
-    //    glm::vec3 v1 = mesh.vertices[i1] + glm::vec3(0.0f, 0.135f, 0.0f);
-    //    glm::vec3 v2 = mesh.vertices[i2] + glm::vec3(0.0f, 0.135f, 0.0f);
-    //    g_scene.mesh.push_back(Triangle(v0, v1, v2));
-    //}
+    cg::OBJMesh mesh;
+    cg::objMeshLoad(mesh, filename);
+    g_scene.mesh.clear();
+    for (int i = 0; i < mesh.indices.size(); i += 3) {
+        int i0 = mesh.indices[i + 0];
+        int i1 = mesh.indices[i + 1];
+        int i2 = mesh.indices[i + 2];
+        glm::vec3 v0 = mesh.vertices[i0] + glm::vec3(0.0f, 0.135f, 0.0f);
+        glm::vec3 v1 = mesh.vertices[i1] + glm::vec3(0.0f, 0.135f, 0.0f);
+        glm::vec3 v2 = mesh.vertices[i2] + glm::vec3(0.0f, 0.135f, 0.0f);
+        g_scene.mesh.push_back(Triangle(v0, v1, v2));
+    }
 }
 
 // MODIFY THIS FUNCTION!
@@ -125,7 +125,7 @@ void updateLine(RTContext &rtx, int y)
     glm::mat4 world_from_view = glm::inverse(rtx.view);
 
     // You can try parallelising this loop by uncommenting this line:
-    //#pragma omp parallel for schedule(dynamic)
+    //#pragma omp parallel num_threads(4) for schedule(dynamic)
     for (int x = 0; x < nx; ++x) {
         float u = (float(x) + 0.5f) / float(nx);
         float v = (float(y) + 0.5f) / float(ny);

@@ -8,7 +8,7 @@ namespace rt {
 class Ray {
   public:
     Ray() {}
-    Ray(const glm::vec3 &a, const glm::vec3 &b)
+    Ray(const glm::vec3 &a, const glm::vec3 &b) // a: origin  b: direction
     {
         A = a;
         B = b;
@@ -26,8 +26,8 @@ class Ray {
         return A + t * B;
     }
 
-    glm::vec3 A;
-    glm::vec3 B;
+    glm::vec3 A;  // origin
+    glm::vec3 B;  // direction
 };
 
 }  // namespace rt

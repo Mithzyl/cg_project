@@ -29,7 +29,12 @@ bool Sphere::hit(const Ray &r, float t_min, float t_max, HitRecord &rec) const
         if (temp < t_max && temp > t_min) {
             rec.t = temp;
             rec.p = r.point_at_parameter(rec.t);
-            rec.normal = (rec.p - center) / radius;
+            rec.normal = (rec.p - center) / radius;  // not checking normal facing
+
+            // adjust normal facing
+            glm::vec3 outward_normal = (rec.p - center) / radius;
+            rec.set_face_normal(r, outward_normal);
+
             return true;
         }
     }
