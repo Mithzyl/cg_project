@@ -8,6 +8,9 @@
 #include "cg_utils2.h"  // Used for OBJ-mesh loading
 #include <stdlib.h>     // Needed for drand48()
 
+
+
+
 namespace rt {
 
 // Store scene (world) in a global variable for convenience
@@ -113,8 +116,15 @@ void setupScene(RTContext &rtx, const char *filename)
 }
 
 // MODIFY THIS FUNCTION!
+/*
+ * 对于当前的像素，在迭代中计算通过该像素的射线返回的颜色，并累加到pixel_color。
+    迭代结束后，将累加的结果除以迭代的次数，即叠加的颜色数量。
+    使用函数clamp(x, min, max)将第2）步的计算结果截断到[min, max]间。
+    对图片上的每个像素，执行步骤 1）~3），输出结果。
+ */
 void updateLine(RTContext &rtx, int y)
 {
+    // camera class settings and function
     int nx = rtx.width;
     int ny = rtx.height;
     float aspect = float(nx) / float(ny);
@@ -127,9 +137,14 @@ void updateLine(RTContext &rtx, int y)
     // You can try parallelising this loop by uncommenting this line:
     //#pragma omp parallel num_threads(4) for schedule(dynamic)
     for (int x = 0; x < nx; ++x) {
-        float u = (float(x) + 0.5f) / float(nx);
-        float v = (float(y) + 0.5f) / float(ny);
-        Ray r(origin, lower_left_corner + u * horizontal + v * vertical);
+        //float u = (float(x) + 0.5f) / float(nx);
+        //float v = (float(y) + 0.5f) / float(ny);
+
+        // antialiasing
+        float u = (float(x) + float(drand48())) / float(nx);
+        float v = (float(y) + float(drand48())) / float(ny);
+
+        Ray r(origin, lower_left_corner + u * horizontal + v * vertical);  // get_ray()
         r.A = glm::vec3(world_from_view * glm::vec4(r.A, 1.0f));
         r.B = glm::vec3(world_from_view * glm::vec4(r.B, 0.0f));
 
