@@ -9,8 +9,6 @@
 #include <stdlib.h>     // Needed for drand48()
 
 
-
-
 namespace rt {
 
 // Store scene (world) in a global variable for convenience
@@ -21,6 +19,29 @@ struct Scene {
     std::vector<Triangle> mesh;
     Box mesh_bbox;
 } g_scene;
+
+glm::vec3 random_in_unit_sphere(){
+    while(true){
+        glm::vec3 p = random_vec3();
+        if(glm::dot(p, p) >= 1)
+            continue;
+        return p;
+    }
+}
+
+glm::vec3 random_unit_vector(){
+    return unit_vector(random_in_unit_sphere());
+}
+
+bool near_zero(glm::vec3 v) {
+    // Return true if the vector is close to zero in all dimensions.
+    const auto s = 1e-8;
+    return (fabs(v[0]) < s) && (fabs(v[1]) < s) && (fabs(v[2]) < s);
+}
+
+glm::vec3 reflect(const glm::vec3& v, const glm::vec3& n){
+    return v - 2.0f * glm::dot(v, n) * n;
+}
 
 bool hit_world(const Ray &r, float t_min, float t_max, HitRecord &rec)
 {
@@ -71,13 +92,29 @@ glm::vec3 color(RTContext &rtx, const Ray &r, int max_bounces)
     if (max_bounces < 0) return glm::vec3(0.0f);
 
     HitRecord rec;
-    if (hit_world(r, 0.0f, 9999.0f, rec)) {
+    if (hit_world(r, 0.001f, 9999.0f, rec)) {
         rec.normal = glm::normalize(rec.normal);  // Always normalise before use!
         if (rtx.show_normals) { return rec.normal * 0.5f + 0.5f; }
 
         // Implement lighting for materials here
         // ...
-        return glm::vec3(0.0f);
+        Ray scattered;
+        glm::vec3 attenuation;
+        // reflective surface
+        if (rec.mat_ptr != NULL){
+            //std::cout << rec.mat_ptr << std::endl;
+            if(rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+                return attenuation * color(rtx, scattered, max_bounces - 1);
+        }
+
+
+        glm::vec3 target = rec.p + rec.normal + random_unit_vector();
+        Ray diffuse_ray = Ray(rec.p, target - rec.p);
+
+        // return diffuse color
+        return 0.5f * color(rtx, diffuse_ray, max_bounces - 1);
+
+        //return glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
     // If no hit, return sky color
@@ -89,17 +126,34 @@ glm::vec3 color(RTContext &rtx, const Ray &r, int max_bounces)
 // MODIFY THIS FUNCTION!
 void setupScene(RTContext &rtx, const char *filename)
 {
+    auto material_ground = std::make_shared<lambertian>(glm::vec3(0.8, 0.8, 0.0));
+    auto material_center = std::make_shared<metal>(glm::vec3(0.7, 0.3, 0.3));
+    auto material_left   = std::make_shared<metal>(glm::vec3(0.8, 0.8, 0.8));
+    auto material_right  = std::make_shared<metal>(glm::vec3(0.8, 0.6, 0.2));
     g_scene.ground = Sphere(glm::vec3(0.0f, -1000.5f, 0.0f), 1000.0f);
+
     g_scene.spheres = {
-        Sphere(glm::vec3(0.0f, 0.0f, 0.0f), 0.5f),
-        Sphere(glm::vec3(1.0f, 0.0f, 0.0f), 0.5f),
-        Sphere(glm::vec3(-1.0f, 0.0f, 0.0f), 0.5f),
+//        Sphere(glm::vec3(0.0f, 0.0f, 0.0f), 0.5f),
+//        Sphere(glm::vec3(1.0f, 0.0f, 0.0f), 0.5f),
+//        Sphere(glm::vec3(-1.0f, 0.0f, 0.0f), 0.5f),
+
+        //Sphere(glm::vec3( 0.0, -100.5, -1.0), 100.0, material_ground),
+        Sphere(glm::vec3( 0.0, 0.0, -1.0),   0.5, material_center),
+        Sphere(glm::vec3(-1.0, 0.0, -1.0),   0.5, material_left),
+        Sphere(glm::vec3(1.0, 0.0, -1.0),   0.5, material_right)
+
+//          Sphere(glm::vec3(0,0,-1), 0.5, new lambertian(glm::vec3(0.8, 0.3, 0.3))),
+//          Sphere(glm::vec3(0,-100.5,-1), 100, new lambertian(glm::vec3(0.8, 0.8, 0.0))),
+//          Sphere(glm::vec3(1,0,-1), 0.5, new metal(glm::vec3(0.8, 0.6, 0.2))),
+//          Sphere(glm::vec3(-1,0,-1), 0.5, new metal(glm::vec3(0.8, 0.8, 0.8))),
+
+
     };
-    g_scene.boxes = {
-        Box(glm::vec3(0.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
-        Box(glm::vec3(1.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
-        Box(glm::vec3(-1.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
-    };
+//    g_scene.boxes = {
+//        Box(glm::vec3(0.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
+//        Box(glm::vec3(1.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
+//        Box(glm::vec3(-1.0f, -0.25f, 0.0f), glm::vec3(0.25f)),
+//    };
 
     cg::OBJMesh mesh;
     cg::objMeshLoad(mesh, filename);
@@ -111,7 +165,7 @@ void setupScene(RTContext &rtx, const char *filename)
         glm::vec3 v0 = mesh.vertices[i0] + glm::vec3(0.0f, 0.135f, 0.0f);
         glm::vec3 v1 = mesh.vertices[i1] + glm::vec3(0.0f, 0.135f, 0.0f);
         glm::vec3 v2 = mesh.vertices[i2] + glm::vec3(0.0f, 0.135f, 0.0f);
-        g_scene.mesh.push_back(Triangle(v0, v1, v2));
+        g_scene.mesh.push_back(Triangle(v0, v1, v2, material_left));
     }
 }
 

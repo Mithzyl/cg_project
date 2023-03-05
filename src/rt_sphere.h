@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rt_hitable.h"
+#include "rt_metal.h"
 
 namespace rt {
 
@@ -8,10 +9,14 @@ class Sphere : public Hitable {
   public:
     Sphere() {}
     Sphere(const glm::vec3 &cen, float r) : center(cen), radius(r){};
+    Sphere(const glm::vec3 &cen, float r, std::shared_ptr<material> m) : center(cen), radius(r), mat_ptr(m){};
+    //Sphere(const glm::vec3 &cen, float r, material* m) : center(cen), radius(r), ma(m){};
     virtual bool hit(const Ray &r, float t_min, float t_max, HitRecord &rec) const;
 
     glm::vec3 center;
     float radius;
+    std::shared_ptr<material> mat_ptr;
+    //material* ma;
 };
 
 // Ray-sphere test from "Ray Tracing in a Weekend" book (page 16)
@@ -34,6 +39,9 @@ bool Sphere::hit(const Ray &r, float t_min, float t_max, HitRecord &rec) const
             // adjust normal facing
             glm::vec3 outward_normal = (rec.p - center) / radius;
             rec.set_face_normal(r, outward_normal);
+
+            rec.mat_ptr = mat_ptr;
+            //rec.mat_ptr = ma;
 
             return true;
         }
